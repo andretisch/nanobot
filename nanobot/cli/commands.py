@@ -365,6 +365,7 @@ def _make_provider(config: Config):
     """Create the appropriate LLM provider from config."""
     from nanobot.providers.base import GenerationSettings
     from nanobot.providers.openai_codex_provider import OpenAICodexProvider
+    from nanobot.providers.qwen_oauth_provider import QwenOAuthProvider
     from nanobot.providers.azure_openai_provider import AzureOpenAIProvider
 
     model = config.agents.defaults.model
@@ -374,6 +375,9 @@ def _make_provider(config: Config):
     # OpenAI Codex (OAuth)
     if provider_name == "openai_codex" or model.startswith("openai-codex/"):
         provider = OpenAICodexProvider(default_model=model)
+    # Qwen OAuth (qwen.ai free tier)
+    elif provider_name == "qwen_oauth" or model.startswith("qwen-oauth/") or model.startswith("qwen_oauth/"):
+        provider = QwenOAuthProvider(default_model=model)
     # Custom: direct OpenAI-compatible endpoint, bypasses LiteLLM
     elif provider_name == "custom":
         from nanobot.providers.custom_provider import CustomProvider
@@ -1085,6 +1089,16 @@ def provider_login(
 
     console.print(f"{__logo__} OAuth Login - {spec.label}\n")
     handler()
+
+
+@_register_login("qwen_oauth")
+def _login_qwen_oauth() -> None:
+    from nanobot.providers.qwen_oauth_provider import login_qwen_oauth
+    try:
+        login_qwen_oauth()
+    except Exception as e:
+        console.print(f"[red]✗ Authentication failed: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @_register_login("openai_codex")

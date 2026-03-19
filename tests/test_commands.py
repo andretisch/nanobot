@@ -165,6 +165,28 @@ def test_config_matches_openai_codex_with_hyphen_prefix():
     assert config.get_provider_name() == "openai_codex"
 
 
+def test_config_matches_qwen_oauth_with_explicit_provider():
+    config = Config()
+    config.agents.defaults.provider = "qwen_oauth"
+    config.agents.defaults.model = "qwen3-coder-plus"
+
+    assert config.get_provider_name() == "qwen_oauth"
+
+
+def test_config_matches_qwen_oauth_with_prefix():
+    config = Config()
+    config.agents.defaults.model = "qwen-oauth/qwen3-coder-plus"
+
+    assert config.get_provider_name() == "qwen_oauth"
+
+
+def test_config_matches_qwen_oauth_vision_model():
+    config = Config()
+    config.agents.defaults.model = "qwen-oauth/vision-model"
+
+    assert config.get_provider_name() == "qwen_oauth"
+
+
 def test_config_matches_explicit_ollama_prefix_without_api_key():
     config = Config()
     config.agents.defaults.model = "ollama/llama3.2"
@@ -239,8 +261,19 @@ def test_litellm_provider_canonicalizes_github_copilot_hyphen_prefix():
 
 
 def test_openai_codex_strip_prefix_supports_hyphen_and_underscore():
+    from nanobot.providers.qwen_oauth_provider import (
+        _resolve_model_name,
+        _strip_model_prefix as qwen_strip,
+    )
+
     assert _strip_model_prefix("openai-codex/gpt-5.1-codex") == "gpt-5.1-codex"
     assert _strip_model_prefix("openai_codex/gpt-5.1-codex") == "gpt-5.1-codex"
+    assert qwen_strip("qwen-oauth/qwen3-coder-plus") == "qwen3-coder-plus"
+    assert qwen_strip("qwen_oauth/qwen3-coder-plus") == "qwen3-coder-plus"
+    assert qwen_strip("qwen_oauth/vision-model") == "vision-model"
+    assert _resolve_model_name("qwen3-coder-plus") == "coder-model"
+    assert _resolve_model_name("qwen3-vl-plus") == "vision-model"
+    assert _resolve_model_name("vision-model") == "vision-model"
 
 
 def test_make_provider_passes_extra_headers_to_custom_provider():

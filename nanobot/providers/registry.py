@@ -274,6 +274,24 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         model_overrides=(),
         is_oauth=True,  # OAuth-based authentication
     ),
+    # Qwen OAuth: uses qwen.ai Device Code OAuth (free tier). Models: coder-model, vision-model.
+    ProviderSpec(
+        name="qwen_oauth",
+        keywords=("qwen-oauth", "qwen_oauth", "coder-model", "vision-model"),
+        env_key="",  # OAuth-based, no API key
+        display_name="Qwen OAuth",
+        litellm_prefix="",  # Not routed through LiteLLM
+        skip_prefixes=(),
+        env_extras=(),
+        is_gateway=False,
+        is_local=False,
+        detect_by_key_prefix="",
+        detect_by_base_keyword="",
+        default_api_base="https://portal.qwen.ai/v1",
+        strip_model_prefix=False,
+        model_overrides=(),
+        is_oauth=True,
+    ),
     # Github Copilot: uses OAuth, not API key.
     ProviderSpec(
         name="github_copilot",

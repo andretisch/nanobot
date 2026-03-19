@@ -86,6 +86,7 @@ class ProvidersConfig(Base):
     byteplus: ProviderConfig = Field(default_factory=ProviderConfig)  # BytePlus (VolcEngine international)
     byteplus_coding_plan: ProviderConfig = Field(default_factory=ProviderConfig)  # BytePlus Coding Plan
     openai_codex: ProviderConfig = Field(default_factory=ProviderConfig)  # OpenAI Codex (OAuth)
+    qwen_oauth: ProviderConfig = Field(default_factory=ProviderConfig)  # Qwen OAuth (qwen.ai free tier)
     github_copilot: ProviderConfig = Field(default_factory=ProviderConfig)  # Github Copilot (OAuth)
 
 
