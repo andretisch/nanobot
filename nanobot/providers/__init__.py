@@ -13,6 +13,7 @@ __all__ = [
     "AnthropicProvider",
     "OpenAICompatProvider",
     "OpenAICodexProvider",
+    "QwenOAuthProvider",
     "AzureOpenAIProvider",
 ]
 
@@ -20,6 +21,7 @@ _LAZY_IMPORTS = {
     "AnthropicProvider": ".anthropic_provider",
     "OpenAICompatProvider": ".openai_compat_provider",
     "OpenAICodexProvider": ".openai_codex_provider",
+    "QwenOAuthProvider": ".qwen_oauth_provider",
     "AzureOpenAIProvider": ".azure_openai_provider",
 }
 
@@ -28,6 +30,7 @@ if TYPE_CHECKING:
     from nanobot.providers.azure_openai_provider import AzureOpenAIProvider
     from nanobot.providers.openai_compat_provider import OpenAICompatProvider
     from nanobot.providers.openai_codex_provider import OpenAICodexProvider
+    from nanobot.providers.qwen_oauth_provider import QwenOAuthProvider
 
 
 def __getattr__(name: str):

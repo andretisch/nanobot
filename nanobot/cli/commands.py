@@ -408,6 +408,9 @@ def _make_provider(config: Config):
     if backend == "openai_codex":
         from nanobot.providers.openai_codex_provider import OpenAICodexProvider
         provider = OpenAICodexProvider(default_model=model)
+    elif backend == "qwen_oauth":
+        from nanobot.providers.qwen_oauth_provider import QwenOAuthProvider
+        provider = QwenOAuthProvider(default_model=model)
     elif backend == "azure_openai":
         from nanobot.providers.azure_openai_provider import AzureOpenAIProvider
         provider = AzureOpenAIProvider(
@@ -1261,6 +1264,16 @@ def provider_login(
 
     console.print(f"{__logo__} OAuth Login - {spec.label}\n")
     handler()
+
+
+@_register_login("qwen_oauth")
+def _login_qwen_oauth() -> None:
+    from nanobot.providers.qwen_oauth_provider import login_qwen_oauth
+    try:
+        login_qwen_oauth()
+    except Exception as e:
+        console.print(f"[red]✗ Authentication failed: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @_register_login("openai_codex")

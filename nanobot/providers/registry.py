@@ -212,6 +212,16 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="https://chatgpt.com/backend-api",
         is_oauth=True,
     ),
+    # Qwen OAuth: uses qwen.ai Device Code OAuth (free tier). Models: coder-model, vision-model.
+    ProviderSpec(
+        name="qwen_oauth",
+        keywords=("qwen-oauth", "qwen_oauth", "coder-model", "vision-model"),
+        env_key="",  # OAuth-based, no API key
+        display_name="Qwen OAuth",
+        backend="qwen_oauth",
+        default_api_base="https://portal.qwen.ai/v1",
+        is_oauth=True,
+    ),
     # GitHub Copilot: OAuth-based
     ProviderSpec(
         name="github_copilot",
