@@ -78,7 +78,7 @@
 - **2026-02-07** 🚀 Released **v0.1.3.post5** with Qwen support & several key improvements! Check [here](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post5) for details.
 - **2026-02-06** ✨ Added Moonshot/Kimi provider, Discord integration, and enhanced security hardening!
 - **2026-02-05** ✨ Added Feishu channel, DeepSeek provider, and enhanced scheduled tasks support!
-- **2026-02-04** 🚀 Released **v0.1.3.post4** with multi-provider & Docker support! Check [here](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post4) for details.
+- **2026-02-04** 🚀 Released **v0.1.3.post4** with multi-provider support! Check [here](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post4) for details.
 - **2026-02-03** ⚡ Integrated vLLM for local LLM support and improved natural language task scheduling!
 - **2026-02-02** 🎉 nanobot officially launched! Welcome to try 🐈 nanobot!
 
@@ -117,7 +117,6 @@
 - [CLI Reference](#-cli-reference)
 - [Python SDK](#-python-sdk)
 - [OpenAI-Compatible API](#-openai-compatible-api)
-- [Docker](#-docker)
 - [Linux Service](#-linux-service)
 - [Project Structure](#-project-structure)
 - [Contribute & Roadmap](#-contribute--roadmap)
@@ -920,8 +919,6 @@ nanobot agent -c ~/.nanobot-telegram/config.json -m "Hello!"
 nanobot agent -c ~/.nanobot-telegram/config.json -w /tmp/nanobot-telegram-test -m "Hello!"
 ```
 
-> Docker users: use `docker run -it` for interactive OAuth login.
-
 </details>
 
 
@@ -957,8 +954,6 @@ nanobot agent -c ~/.nanobot-telegram/config.json -m "Hello!"
 # One-off workspace override on top of that config
 nanobot agent -c ~/.nanobot-telegram/config.json -w /tmp/nanobot-telegram-test -m "Hello!"
 ```
-
-> Docker users: use `docker run -it` for interactive OAuth login.
 
 </details>
 
@@ -1016,81 +1011,6 @@ ollama run llama3.2
 
 > `provider: "auto"` also works when `providers.ollama.apiBase` is configured, but setting `"provider": "ollama"` is the clearest option.
 
-</details>
-
-<details>
-<summary><b>OpenVINO Model Server (local / OpenAI-compatible)</b></summary>
-
-Run LLMs locally on Intel GPUs using [OpenVINO Model Server](https://docs.openvino.ai/2026/model-server/ovms_docs_llm_quickstart.html). OVMS exposes an OpenAI-compatible API at `/v3`.
-
-> Requires Docker and an Intel GPU with driver access (`/dev/dri`).
-
-**1. Pull the model** (example):
-
-```bash
-mkdir -p ov/models && cd ov
-
-docker run -d \
-  --rm \
-  --user $(id -u):$(id -g) \
-  -v $(pwd)/models:/models \
-  openvino/model_server:latest-gpu \
-  --pull \
-  --model_name openai/gpt-oss-20b \
-  --model_repository_path /models \
-  --source_model OpenVINO/gpt-oss-20b-int4-ov \
-  --task text_generation \
-  --tool_parser gptoss \
-  --reasoning_parser gptoss \
-  --enable_prefix_caching true \
-  --target_device GPU
-```
-
-> This downloads the model weights. Wait for the container to finish before proceeding.
-
-**2. Start the server** (example):
-
-```bash
-docker run -d \
-  --rm \
-  --name ovms \
-  --user $(id -u):$(id -g) \
-  -p 8000:8000 \
-  -v $(pwd)/models:/models \
-  --device /dev/dri \
-  --group-add=$(stat -c "%g" /dev/dri/render* | head -n 1) \
-  openvino/model_server:latest-gpu \
-  --rest_port 8000 \
-  --model_name openai/gpt-oss-20b \
-  --model_repository_path /models \
-  --source_model OpenVINO/gpt-oss-20b-int4-ov \
-  --task text_generation \
-  --tool_parser gptoss \
-  --reasoning_parser gptoss \
-  --enable_prefix_caching true \
-  --target_device GPU
-```
-
-**3. Add to config** (partial — merge into `~/.nanobot/config.json`):
-
-```json
-{
-  "providers": {
-    "ovms": {
-      "apiBase": "http://localhost:8000/v3"
-    }
-  },
-  "agents": {
-    "defaults": {
-      "provider": "ovms",
-      "model": "openai/gpt-oss-20b"
-    }
-  }
-}
-```
-
-> OVMS is a local server — no API key required. Supports tool calling (`--tool_parser gptoss`), reasoning (`--reasoning_parser gptoss`), and streaming.
-> See the [official OVMS docs](https://docs.openvino.ai/2026/model-server/ovms_docs_llm_quickstart.html) for more details.
 </details>
 
 <details>
@@ -1680,45 +1600,6 @@ resp = client.chat.completions.create(
     extra_body={"session_id": "my-session"},  # optional: isolate conversation
 )
 print(resp.choices[0].message.content)
-```
-
-## 🐳 Docker
-
-> [!TIP]
-> The `-v ~/.nanobot:/root/.nanobot` flag mounts your local config directory into the container, so your config and workspace persist across container restarts.
-
-### Docker Compose
-
-```bash
-docker compose run --rm nanobot-cli onboard   # first-time setup
-vim ~/.nanobot/config.json                     # add API keys
-docker compose up -d nanobot-gateway           # start gateway
-```
-
-```bash
-docker compose run --rm nanobot-cli agent -m "Hello!"   # run CLI
-docker compose logs -f nanobot-gateway                   # view logs
-docker compose down                                      # stop
-```
-
-### Docker
-
-```bash
-# Build the image
-docker build -t nanobot .
-
-# Initialize config (first time only)
-docker run -v ~/.nanobot:/root/.nanobot --rm nanobot onboard
-
-# Edit config on host to add API keys
-vim ~/.nanobot/config.json
-
-# Run gateway (connects to enabled channels, e.g. Telegram/Discord/Mochat)
-docker run -v ~/.nanobot:/root/.nanobot -p 18790:18790 nanobot gateway
-
-# Or run a single command
-docker run -v ~/.nanobot:/root/.nanobot --rm nanobot agent -m "Hello!"
-docker run -v ~/.nanobot:/root/.nanobot --rm nanobot status
 ```
 
 ## 🐧 Linux Service
