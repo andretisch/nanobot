@@ -60,7 +60,7 @@ class MessageTool(Tool):
                 },
                 "channel": {
                     "type": "string",
-                    "description": "Optional: target channel (telegram, discord, email, etc.)"
+                    "description": "Optional: target channel (telegram, vk, email, etc.)"
                 },
                 "chat_id": {
                     "type": "string",

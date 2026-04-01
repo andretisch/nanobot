@@ -1054,7 +1054,7 @@ def channels_status():
 
 @channels_app.command("login")
 def channels_login(
-    channel_name: str = typer.Argument(..., help="Channel name (e.g. telegram, discord)"),
+    channel_name: str = typer.Argument(..., help="Channel name (e.g. telegram, vk)"),
     force: bool = typer.Option(False, "--force", "-f", help="Force re-authentication even if already logged in"),
 ):
     """Authenticate with a channel via QR code or other interactive login."""

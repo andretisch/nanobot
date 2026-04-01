@@ -243,12 +243,10 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
 | Channel | What you need |
 |---------|---------------|
 | **Telegram** | Bot token from @BotFather |
-| **Discord** | Bot token + Message Content intent |
 | **VK (VKontakte)** | Community token + Long Poll API |
 | **WeChat (Weixin)** | QR code scan (`nanobot channels login weixin`) |
 | **Feishu** | App ID + App Secret |
 | **DingTalk** | App Key + App Secret |
-| **Slack** | Bot token + App-Level token |
 | **Matrix** | Homeserver URL + Access token |
 | **Email** | IMAP/SMTP credentials |
 | **QQ** | App ID + App Secret |
@@ -350,58 +348,6 @@ If you prefer to configure manually, add the following to `~/.nanobot/config.jso
 
 </details>
 
-<details>
-<summary><b>Discord</b></summary>
-
-**1. Create a bot**
-- Go to https://discord.com/developers/applications
-- Create an application → Bot → Add Bot
-- Copy the bot token
-
-**2. Enable intents**
-- In the Bot settings, enable **MESSAGE CONTENT INTENT**
-- (Optional) Enable **SERVER MEMBERS INTENT** if you plan to use allow lists based on member data
-
-**3. Get your User ID**
-- Discord Settings → Advanced → enable **Developer Mode**
-- Right-click your avatar → **Copy User ID**
-
-**4. Configure**
-
-```json
-{
-  "channels": {
-    "discord": {
-      "enabled": true,
-      "token": "YOUR_BOT_TOKEN",
-      "allowFrom": ["YOUR_USER_ID"],
-      "groupPolicy": "mention"
-    }
-  }
-}
-```
-
-> `groupPolicy` controls how the bot responds in group channels:
-> - `"mention"` (default) — Only respond when @mentioned
-> - `"open"` — Respond to all messages
-> DMs always respond when the sender is in `allowFrom`.
-> - If you set group policy to open create new threads as private threads and then @ the bot into it. Otherwise the thread itself and the channel in which you spawned it will spawn a bot session.
-
-**5. Invite the bot**
-- OAuth2 → URL Generator
-- Scopes: `bot`
-- Bot Permissions: `Send Messages`, `Read Message History`
-- Open the generated invite URL and add the bot to your server
-
-**6. Run**
-
-```bash
-nanobot gateway
-```
-
-</details>
-
-<details>
 <summary><b>VK (VKontakte)</b></summary>
 
 Uses **Bots Long Poll API** with `vkbottle`.
@@ -633,52 +579,6 @@ Uses **Stream Mode** — no public IP required.
 ```bash
 nanobot gateway
 ```
-
-</details>
-
-<details>
-<summary><b>Slack</b></summary>
-
-Uses **Socket Mode** — no public URL required.
-
-**1. Create a Slack app**
-- Go to [Slack API](https://api.slack.com/apps) → **Create New App** → "From scratch"
-- Pick a name and select your workspace
-
-**2. Configure the app**
-- **Socket Mode**: Toggle ON → Generate an **App-Level Token** with `connections:write` scope → copy it (`xapp-...`)
-- **OAuth & Permissions**: Add bot scopes: `chat:write`, `reactions:write`, `app_mentions:read`
-- **Event Subscriptions**: Toggle ON → Subscribe to bot events: `message.im`, `message.channels`, `app_mention` → Save Changes
-- **App Home**: Scroll to **Show Tabs** → Enable **Messages Tab** → Check **"Allow users to send Slash commands and messages from the messages tab"**
-- **Install App**: Click **Install to Workspace** → Authorize → copy the **Bot Token** (`xoxb-...`)
-
-**3. Configure nanobot**
-
-```json
-{
-  "channels": {
-    "slack": {
-      "enabled": true,
-      "botToken": "xoxb-...",
-      "appToken": "xapp-...",
-      "allowFrom": ["YOUR_SLACK_USER_ID"],
-      "groupPolicy": "mention"
-    }
-  }
-}
-```
-
-**4. Run**
-
-```bash
-nanobot gateway
-```
-
-DM the bot directly or @mention it in a channel — it should respond!
-
-> [!TIP]
-> - `groupPolicy`: `"mention"` (default — respond only when @mentioned), `"open"` (respond to all channel messages), or `"allowlist"` (restrict to specific channels).
-> - DM policy defaults to open. Set `"dm": {"enabled": false}` to disable DMs.
 
 </details>
 
@@ -1336,13 +1236,13 @@ If you want each instance to have its own dedicated workspace from the start, pa
 ```bash
 # Create separate instance configs and workspaces
 nanobot onboard --config ~/.nanobot-telegram/config.json --workspace ~/.nanobot-telegram/workspace
-nanobot onboard --config ~/.nanobot-discord/config.json --workspace ~/.nanobot-discord/workspace
+nanobot onboard --config ~/.nanobot-vk/config.json --workspace ~/.nanobot-vk/workspace
 nanobot onboard --config ~/.nanobot-feishu/config.json --workspace ~/.nanobot-feishu/workspace
 ```
 
 **Configure each instance:**
 
-Edit `~/.nanobot-telegram/config.json`, `~/.nanobot-discord/config.json`, etc. with different channel settings. The workspace you passed during `onboard` is saved into each config as that instance's default workspace.
+Edit `~/.nanobot-telegram/config.json`, `~/.nanobot-vk/config.json`, etc. with different channel settings. The workspace you passed during `onboard` is saved into each config as that instance's default workspace.
 
 **Run instances:**
 
@@ -1350,8 +1250,8 @@ Edit `~/.nanobot-telegram/config.json`, `~/.nanobot-discord/config.json`, etc. w
 # Instance A - Telegram bot
 nanobot gateway --config ~/.nanobot-telegram/config.json
 
-# Instance B - Discord bot  
-nanobot gateway --config ~/.nanobot-discord/config.json
+# Instance B - VK bot  
+nanobot gateway --config ~/.nanobot-vk/config.json
 
 # Instance C - Feishu bot with custom port
 nanobot gateway --config ~/.nanobot-feishu/config.json --port 18792
@@ -1365,7 +1265,7 @@ To open a CLI session against one of these instances locally:
 
 ```bash
 nanobot agent -c ~/.nanobot-telegram/config.json -m "Hello from Telegram instance"
-nanobot agent -c ~/.nanobot-discord/config.json -m "Hello from Discord instance"
+nanobot agent -c ~/.nanobot-vk/config.json -m "Hello from VK instance"
 
 # Optional one-off workspace override
 nanobot agent -c ~/.nanobot-telegram/config.json -w /tmp/nanobot-telegram-test
@@ -1418,7 +1318,7 @@ Start separate instances:
 
 ```bash
 nanobot gateway --config ~/.nanobot-telegram/config.json
-nanobot gateway --config ~/.nanobot-discord/config.json
+nanobot gateway --config ~/.nanobot-vk/config.json
 ```
 
 Override workspace for one-off runs when needed:
@@ -1429,7 +1329,7 @@ nanobot gateway --config ~/.nanobot-telegram/config.json --workspace /tmp/nanobo
 
 ### Common Use Cases
 
-- Run separate bots for Telegram, Discord, Feishu, and other platforms
+- Run separate bots for Telegram, VK, Feishu, and other platforms
 - Keep testing and production instances isolated
 - Use different models or providers for different teams
 - Serve multiple tenants with separate configs and runtime data

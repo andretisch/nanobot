@@ -379,6 +379,6 @@ $ nanobot plugins list
 
   Name       Source    Enabled
   telegram   builtin  yes
-  discord    builtin  no
+  vk         builtin  no
   webhook    plugin   yes
 ```

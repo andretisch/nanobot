@@ -90,6 +90,19 @@ class VKChannel(BaseChannel):
                 path = await self._download_media(doc_url, ext=ext)
                 if path:
                     media.append(path)
+                continue
+
+            # VK voice messages are delivered as attachment type "audio_message".
+            audio_message = getattr(att, "audio_message", None)
+            if audio_message:
+                ogg_url = getattr(audio_message, "link_ogg", None)
+                mp3_url = getattr(audio_message, "link_mp3", None)
+                audio_url = ogg_url or mp3_url
+                ext = ".ogg" if ogg_url else ".mp3"
+                if audio_url:
+                    path = await self._download_media(audio_url, ext=ext)
+                    if path:
+                        media.append(path)
         return media
 
     async def start(self) -> None:
@@ -127,6 +140,14 @@ class VKChannel(BaseChannel):
 
             content = getattr(message, "text", "") or ""
             media = await self._extract_attachments(message)
+            if media:
+                audio_paths = [p for p in media if p.lower().endswith((".ogg", ".mp3", ".wav", ".m4a"))]
+                if audio_paths:
+                    transcription = await self.transcribe_audio(audio_paths[0])
+                    if transcription:
+                        content = (f"{content}\n" if content else "") + f"[transcription: {transcription}]"
+                    else:
+                        content = (f"{content}\n" if content else "") + f"[voice: {audio_paths[0]}]"
 
             reply = getattr(message, "reply_message", None)
             reply_text = (getattr(reply, "text", "") or "").strip() if reply else ""

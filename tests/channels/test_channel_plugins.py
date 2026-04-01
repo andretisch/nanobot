@@ -714,14 +714,14 @@ async def test_enabled_channels_returns_channel_names():
     mgr.bus = MessageBus()
     mgr.channels = {
         "telegram": _StartableChannel(fake_config, mgr.bus),
-        "slack": _StartableChannel(fake_config, mgr.bus),
+        "vk": _StartableChannel(fake_config, mgr.bus),
     }
     mgr._dispatch_task = None
 
     enabled = mgr.enabled_channels
 
     assert "telegram" in enabled
-    assert "slack" in enabled
+    assert "vk" in enabled
     assert len(enabled) == 2
 
 
