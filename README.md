@@ -183,13 +183,6 @@ uv tool upgrade nanobot-ai
 nanobot --version
 ```
 
-**Using WhatsApp?** Rebuild the local bridge after upgrading:
-
-```bash
-rm -rf ~/.nanobot/bridge
-nanobot channels login whatsapp
-```
-
 ## 🚀 Quick Start
 
 > [!TIP]
@@ -251,7 +244,7 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
 |---------|---------------|
 | **Telegram** | Bot token from @BotFather |
 | **Discord** | Bot token + Message Content intent |
-| **WhatsApp** | QR code scan (`nanobot channels login whatsapp`) |
+| **VK (VKontakte)** | Community token + Long Poll API |
 | **WeChat (Weixin)** | QR code scan (`nanobot channels login weixin`) |
 | **Feishu** | App ID + App Secret |
 | **DingTalk** | App Key + App Secret |
@@ -409,6 +402,39 @@ nanobot gateway
 </details>
 
 <details>
+<summary><b>VK (VKontakte)</b></summary>
+
+Uses **Bots Long Poll API** with `vkbottle`.
+
+**1. Prepare your VK community**
+- Enable community messages
+- Create a community access token with message permissions
+- Enable Long Poll API and incoming message events
+
+**2. Configure**
+
+```json
+{
+  "channels": {
+    "vk": {
+      "enabled": true,
+      "token": "vk1.a.YOUR_VK_COMMUNITY_TOKEN",
+      "allowFrom": ["*"],
+      "reactionId": 10
+    }
+  }
+}
+```
+
+**3. Run**
+
+```bash
+nanobot gateway
+```
+
+</details>
+
+<details>
 <summary><b>Matrix (Element)</b></summary>
 
 Install Matrix dependencies first:
@@ -471,47 +497,6 @@ pip install nanobot-ai[matrix]
 ```bash
 nanobot gateway
 ```
-
-</details>
-
-<details>
-<summary><b>WhatsApp</b></summary>
-
-Requires **Node.js ≥18**.
-
-**1. Link device**
-
-```bash
-nanobot channels login whatsapp
-# Scan QR with WhatsApp → Settings → Linked Devices
-```
-
-**2. Configure**
-
-```json
-{
-  "channels": {
-    "whatsapp": {
-      "enabled": true,
-      "allowFrom": ["+1234567890"]
-    }
-  }
-}
-```
-
-**3. Run** (two terminals)
-
-```bash
-# Terminal 1
-nanobot channels login whatsapp
-
-# Terminal 2
-nanobot gateway
-```
-
-> WhatsApp bridge updates are not applied automatically for existing installations.
-> After upgrading nanobot, rebuild the local bridge with:
-> `rm -rf ~/.nanobot/bridge && nanobot channels login whatsapp`
 
 </details>
 
