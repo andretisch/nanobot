@@ -105,6 +105,91 @@ class VKChannel(BaseChannel):
                         media.append(path)
         return media
 
+    async def _upload_doc_attachment(self, peer_id: int, file_path: str) -> str | None:
+        """Upload file as VK document and return attachment token."""
+        if not self.bot:
+            return None
+        try:
+            upload_server = await self.bot.api.request(
+                "docs.getMessagesUploadServer",
+                {"peer_id": peer_id, "type": "doc"},
+            )
+            upload_url = (upload_server or {}).get("upload_url")
+            if not upload_url:
+                return None
+
+            with open(file_path, "rb") as f:
+                files = {"file": (os.path.basename(file_path), f, "application/octet-stream")}
+                async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                    upload_resp = await client.post(upload_url, files=files)
+                    upload_resp.raise_for_status()
+            uploaded = upload_resp.json()
+            file_token = uploaded.get("file") if isinstance(uploaded, dict) else None
+            if not file_token:
+                return None
+
+            saved = await self.bot.api.request(
+                "docs.save",
+                {"file": file_token, "title": os.path.basename(file_path)},
+            )
+            docs = saved if isinstance(saved, list) else []
+            if not docs:
+                return None
+            doc = docs[0]
+            owner_id = doc.get("owner_id")
+            doc_id = doc.get("id")
+            access_key = doc.get("access_key")
+            if owner_id is None or doc_id is None:
+                return None
+            return f"doc{owner_id}_{doc_id}" + (f"_{access_key}" if access_key else "")
+        except Exception as e:
+            logger.warning("VK doc upload failed ({}): {}", file_path, e)
+            return None
+
+    async def _upload_photo_attachment(self, peer_id: int, file_path: str) -> str | None:
+        """Upload file as VK message photo and return attachment token."""
+        if not self.bot:
+            return None
+        try:
+            upload_server = await self.bot.api.request(
+                "photos.getMessagesUploadServer",
+                {"peer_id": peer_id},
+            )
+            upload_url = (upload_server or {}).get("upload_url")
+            if not upload_url:
+                return None
+
+            with open(file_path, "rb") as f:
+                files = {"photo": (os.path.basename(file_path), f, "application/octet-stream")}
+                async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                    upload_resp = await client.post(upload_url, files=files)
+                    upload_resp.raise_for_status()
+            uploaded = upload_resp.json()
+            if not isinstance(uploaded, dict):
+                return None
+
+            saved = await self.bot.api.request(
+                "photos.saveMessagesPhoto",
+                {
+                    "server": uploaded.get("server"),
+                    "photo": uploaded.get("photo"),
+                    "hash": uploaded.get("hash"),
+                },
+            )
+            photos = saved if isinstance(saved, list) else []
+            if not photos:
+                return None
+            photo = photos[0]
+            owner_id = photo.get("owner_id")
+            photo_id = photo.get("id")
+            access_key = photo.get("access_key")
+            if owner_id is None or photo_id is None:
+                return None
+            return f"photo{owner_id}_{photo_id}" + (f"_{access_key}" if access_key else "")
+        except Exception as e:
+            logger.warning("VK photo upload failed ({}): {}", file_path, e)
+            return None
+
     async def start(self) -> None:
         if not VKBOTTLE_AVAILABLE:
             logger.error("vkbottle not installed. Run: pip install vkbottle")
@@ -205,4 +290,47 @@ class VKChannel(BaseChannel):
     async def send(self, msg: OutboundMessage) -> None:
         if not self._running or not self.bot:
             return
-        await self.bot.api.messages.send(peer_id=int(msg.chat_id), message=msg.content, random_id=0)
+        peer_id = int(msg.chat_id)
+        attachment_tokens: list[str] = []
+        failed_media: list[str] = []
+
+        image_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
+        for media_path in msg.media or []:
+            path = media_path
+            if media_path.startswith(("http://", "https://")):
+                guessed_ext = os.path.splitext(media_path.split("?", 1)[0])[1] or ".bin"
+                downloaded = await self._download_media(media_path, ext=guessed_ext)
+                if not downloaded:
+                    failed_media.append(os.path.basename(media_path))
+                    continue
+                path = downloaded
+            if not os.path.exists(path):
+                logger.warning("VK send: media path does not exist: {}", path)
+                failed_media.append(os.path.basename(path))
+                continue
+
+            ext = os.path.splitext(path)[1].lower()
+            if ext in image_exts:
+                token = await self._upload_photo_attachment(peer_id, path)
+            else:
+                token = await self._upload_doc_attachment(peer_id, path)
+            if token:
+                attachment_tokens.append(token)
+            else:
+                failed_media.append(os.path.basename(path))
+
+        text = msg.content or (" " if attachment_tokens else "")
+        if failed_media:
+            failed_list = ", ".join(dict.fromkeys(failed_media))
+            hint = (
+                f"\n\n[VK] Не удалось прикрепить файл(ы): {failed_list}. "
+                "Проверьте права community token (доступ к docs/files)."
+            )
+            text = (text or "").strip() + hint
+
+        await self.bot.api.messages.send(
+            peer_id=peer_id,
+            message=text,
+            attachment=",".join(attachment_tokens) if attachment_tokens else None,
+            random_id=0,
+        )
