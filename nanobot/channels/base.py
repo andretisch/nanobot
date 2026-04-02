@@ -24,7 +24,6 @@ class BaseChannel(ABC):
 
     name: str = "base"
     display_name: str = "Base"
-    transcription_api_key: str = ""
 
     def __init__(self, config: Any, bus: MessageBus):
         """
@@ -39,40 +38,29 @@ class BaseChannel(ABC):
         self._running = False
 
     async def transcribe_audio(self, file_path: str | Path) -> str:
-        """Transcribe an audio file. Prefer AUDIO_URL server, fallback to Groq."""
+        """Transcribe an audio file via HTTP server from env ``AUDIO_URL`` (POST ``…/transcribe``)."""
         path = Path(file_path)
         audio_url = os.getenv("AUDIO_URL", "").strip()
-
-        # Prefer user-provided STT server if configured.
-        if audio_url:
-            try:
-                with path.open("rb") as f:
-                    files = {"file": (path.name, f, "application/octet-stream")}
-                    async with httpx.AsyncClient(timeout=120.0) as client:
-                        resp = await client.post(f"{audio_url.rstrip('/')}/transcribe", files=files)
-                        resp.raise_for_status()
-                data = resp.json()
-                text = str(data.get("text") or "").strip() if isinstance(data, dict) else ""
-                if text:
-                    return text
-                logger.warning(
-                    "{}: AUDIO_URL transcription returned empty text: {}",
-                    self.name,
-                    data if isinstance(data, dict) else "non-JSON response",
-                )
-            except Exception as e:
-                logger.warning("{}: AUDIO_URL transcription failed: {}", self.name, e)
-
-        if not self.transcription_api_key:
+        if not audio_url:
             return ""
         try:
-            from nanobot.providers.transcription import GroqTranscriptionProvider
-
-            provider = GroqTranscriptionProvider(api_key=self.transcription_api_key)
-            return await provider.transcribe(path)
+            with path.open("rb") as f:
+                files = {"file": (path.name, f, "application/octet-stream")}
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    resp = await client.post(f"{audio_url.rstrip('/')}/transcribe", files=files)
+                    resp.raise_for_status()
+            data = resp.json()
+            text = str(data.get("text") or "").strip() if isinstance(data, dict) else ""
+            if text:
+                return text
+            logger.warning(
+                "{}: AUDIO_URL transcription returned empty text: {}",
+                self.name,
+                data if isinstance(data, dict) else "non-JSON response",
+            )
         except Exception as e:
-            logger.warning("{}: audio transcription failed: {}", self.name, e)
-            return ""
+            logger.warning("{}: AUDIO_URL transcription failed: {}", self.name, e)
+        return ""
 
     async def login(self, force: bool = False) -> bool:
         """

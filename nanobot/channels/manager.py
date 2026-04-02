@@ -38,8 +38,6 @@ class ChannelManager:
         """Initialize channels discovered via pkgutil scan + entry_points plugins."""
         from nanobot.channels.registry import discover_all
 
-        groq_key = self.config.providers.groq.api_key
-
         for name, cls in discover_all().items():
             section = getattr(self.config.channels, name, None)
             if section is None:
@@ -53,7 +51,6 @@ class ChannelManager:
                 continue
             try:
                 channel = cls(section, self.bus)
-                channel.transcription_api_key = groq_key
                 if name == "telegram":
                     web_proxy = self.config.tools.web.proxy
                     if web_proxy and getattr(channel.config, "proxy", None) in (None, ""):

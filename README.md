@@ -286,7 +286,7 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
 >
 > **Proxy:** set `"proxy": "http://127.0.0.1:7890"` (or `socks5://…`) inside `channels.telegram` if Bot API must go through a proxy. If you omit it but set `tools.web.proxy`, nanobot reuses that URL for Telegram as well. You can also set env `TELEGRAM_PROXY`. SOCKS5 URLs are supported via `python-telegram-bot[socks]` (nanobot declares this dependency). Plain HTTP proxies may work via `HTTPS_PROXY` without config (httpx); SOCKS5 is not picked up from the environment alone—set it in config, `TELEGRAM_PROXY`, or `tools.web.proxy`.
 >
-> **Voice vs audio (dictaphone):** by default only **voice notes** are auto-transcribed (`transcribeVoice`: true). Uploaded **audio** files (`audio` in Bot API, e.g. dictaphone exports) are not transcribed (`transcribeAudio`: false) so long recordings do not flood context. Set `"transcribeAudio": true` if you want those transcribed too.
+> **Voice vs audio (dictaphone):** by default only **voice notes** are auto-transcribed (`transcribeVoice`: true) when env **`AUDIO_URL`** is set. Uploaded **audio** files (`audio` in Bot API, e.g. dictaphone exports) are not transcribed (`transcribeAudio`: false) so long recordings do not flood context. Set `"transcribeAudio": true` if you want those transcribed too.
 
 
 **3. Run**
@@ -743,7 +743,7 @@ Config file: `~/.nanobot/config.json`
 ### Providers
 
 > [!TIP]
-> - **Groq** (or `AUDIO_URL` STT) can transcribe Telegram **voice** messages by default; uploaded **audio** files are skipped unless you enable `transcribeAudio` on the Telegram channel (see Telegram section above).
+> - Set env **`AUDIO_URL`** (HTTP STT with `POST {AUDIO_URL}/transcribe`) to transcribe Telegram **voice** messages; uploaded **audio** files are skipped unless you enable `transcribeAudio` on the Telegram channel (see Telegram section above).
 > - **MiniMax Coding Plan**: Exclusive discount links for the nanobot community: [Overseas](https://platform.minimax.io/subscribe/coding-plan?code=9txpdXw04g&source=link) · [Mainland China](https://platform.minimaxi.com/subscribe/token-plan?code=GILTJpMTqZ&source=link)
 > - **MiniMax (Mainland China)**: If your API key is from MiniMax's mainland China platform (minimaxi.com), set `"apiBase": "https://api.minimaxi.com/v1"` in your minimax provider config.
 > - **VolcEngine / BytePlus Coding Plan**: Use dedicated providers `volcengineCodingPlan` or `byteplusCodingPlan` instead of the pay-per-use `volcengine` / `byteplus` providers.
@@ -761,7 +761,7 @@ Config file: `~/.nanobot/config.json`
 | `azure_openai` | LLM (Azure OpenAI) | [portal.azure.com](https://portal.azure.com) |
 | `openai` | LLM (GPT direct) | [platform.openai.com](https://platform.openai.com) |
 | `deepseek` | LLM (DeepSeek direct) | [platform.deepseek.com](https://platform.deepseek.com) |
-| `groq` | LLM + **Voice transcription** (Whisper) | [console.groq.com](https://console.groq.com) |
+| `groq` | LLM (Groq, OpenAI-compatible) | [console.groq.com](https://console.groq.com) |
 | `minimax` | LLM (MiniMax direct) | [platform.minimaxi.com](https://platform.minimaxi.com) |
 | `gemini` | LLM (Gemini direct) | [aistudio.google.com](https://aistudio.google.com) |
 | `aihubmix` | LLM (API gateway, access to all models) | [aihubmix.com](https://aihubmix.com) |

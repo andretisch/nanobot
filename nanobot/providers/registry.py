@@ -339,7 +339,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="http://localhost:8000/v3",
     ),
     # === Auxiliary (not a primary LLM provider) ============================
-    # Groq: mainly used for Whisper voice transcription, also usable for LLM
+    # Groq: OpenAI-compatible LLM endpoint
     ProviderSpec(
         name="groq",
         keywords=("groq",),
