@@ -54,6 +54,10 @@ class ChannelManager:
             try:
                 channel = cls(section, self.bus)
                 channel.transcription_api_key = groq_key
+                if name == "telegram":
+                    web_proxy = self.config.tools.web.proxy
+                    if web_proxy and getattr(channel.config, "proxy", None) in (None, ""):
+                        channel._tools_web_proxy_fallback = web_proxy  # type: ignore[attr-defined]
                 self.channels[name] = channel
                 logger.info("{} channel enabled", cls.display_name)
             except Exception as e:

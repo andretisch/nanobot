@@ -225,6 +225,23 @@ class TelegramChannel(BaseChannel):
         self._bot_user_id: int | None = None
         self._bot_username: str | None = None
         self._stream_bufs: dict[str, _StreamBuf] = {}  # chat_id -> streaming state
+        # Set by ChannelManager when tools.web.proxy is set but channels.telegram.proxy is not.
+        self._tools_web_proxy_fallback: str | None = None
+
+    def _resolve_proxy(self) -> str | None:
+        """HTTP(S) or SOCKS URL for Bot API. Precedence: config → TELEGRAM_PROXY → tools.web fallback.
+
+        If all are unset, returns None and httpx may still use HTTPS_PROXY / ALL_PROXY (not SOCKS).
+        """
+        for raw in (
+            self.config.proxy,
+            os.getenv("TELEGRAM_PROXY"),
+            self._tools_web_proxy_fallback,
+        ):
+            p = (raw or "").strip()
+            if p:
+                return p
+        return None
 
     def is_allowed(self, sender_id: str) -> bool:
         """Preserve Telegram's legacy id|username allowlist matching."""
@@ -253,7 +270,7 @@ class TelegramChannel(BaseChannel):
 
         self._running = True
 
-        proxy = self.config.proxy or None
+        proxy = self._resolve_proxy()
 
         # Separate pools so long-polling (getUpdates) never starves outbound sends.
         api_request = HTTPXRequest(

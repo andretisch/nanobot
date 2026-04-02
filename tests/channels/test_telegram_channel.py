@@ -198,6 +198,34 @@ async def test_start_creates_separate_pools_with_proxy(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_start_uses_tools_web_proxy_fallback(monkeypatch) -> None:
+    """When channels.telegram.proxy is unset, Bot API may use tools.web.proxy via manager hook."""
+    _FakeHTTPXRequest.clear()
+    config = TelegramConfig(
+        enabled=True,
+        token="123:abc",
+        allow_from=["*"],
+    )
+    bus = MessageBus()
+    channel = TelegramChannel(config, bus)
+    channel._tools_web_proxy_fallback = "http://127.0.0.1:9999"
+    app = _FakeApp(lambda: setattr(channel, "_running", False))
+    builder = _FakeBuilder(app)
+
+    monkeypatch.setattr("nanobot.channels.telegram.HTTPXRequest", _FakeHTTPXRequest)
+    monkeypatch.setattr(
+        "nanobot.channels.telegram.Application",
+        SimpleNamespace(builder=lambda: builder),
+    )
+
+    await channel.start()
+
+    api_req, poll_req = _FakeHTTPXRequest.instances
+    assert api_req.kwargs["proxy"] == "http://127.0.0.1:9999"
+    assert poll_req.kwargs["proxy"] == "http://127.0.0.1:9999"
+
+
+@pytest.mark.asyncio
 async def test_start_respects_custom_pool_config(monkeypatch) -> None:
     _FakeHTTPXRequest.clear()
     config = TelegramConfig(

@@ -281,6 +281,8 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
 > Copy this value **without the `@` symbol** and paste it into the config file.
 > `apiBaseUrl` and `apiBaseFileUrl` are optional. Use them when running a local Telegram Bot API server (recommended for larger file download limits).
 > You can tune the default cloud download limit message threshold via `TELEGRAM_BOT_API_MAX_DOWNLOAD_BYTES` (default: `20971520`).
+>
+> **Proxy:** set `"proxy": "http://127.0.0.1:7890"` (or `socks5://…`) inside `channels.telegram` if Bot API must go through a proxy. If you omit it but set `tools.web.proxy`, nanobot reuses that URL for Telegram as well. You can also set env `TELEGRAM_PROXY`. SOCKS5 URLs are supported via `python-telegram-bot[socks]` (nanobot declares this dependency). Plain HTTP proxies may work via `HTTPS_PROXY` without config (httpx); SOCKS5 is not picked up from the environment alone—set it in config, `TELEGRAM_PROXY`, or `tools.web.proxy`.
 
 
 **3. Run**
