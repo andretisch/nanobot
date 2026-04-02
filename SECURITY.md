@@ -44,7 +44,9 @@ chmod 600 ~/.nanobot/config.json
     "telegram": {
       "enabled": true,
       "token": "YOUR_BOT_TOKEN",
-      "allowFrom": ["123456789", "987654321"]
+      "allowFrom": ["123456789", "987654321"],
+      "transcribeVoice": true,
+      "transcribeAudio": false
     }
   }
 }

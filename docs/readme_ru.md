@@ -163,7 +163,9 @@ nanobot provider login qwen-oauth      # Qwen (qwen.ai, бесплатный tie
   "channels": {
     "telegram": {
       "apiBaseUrl": "http://127.0.0.1:8081/bot",
-      "apiBaseFileUrl": "http://127.0.0.1:8081/file/bot"
+      "apiBaseFileUrl": "http://127.0.0.1:8081/file/bot",
+      "transcribeVoice": true,
+      "transcribeAudio": false
     }
   }
 }

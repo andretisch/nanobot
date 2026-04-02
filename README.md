@@ -271,7 +271,9 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
       "token": "YOUR_BOT_TOKEN",
       "allowFrom": ["YOUR_USER_ID"],
       "apiBaseUrl": "http://127.0.0.1:8081/bot",
-      "apiBaseFileUrl": "http://127.0.0.1:8081/file/bot"
+      "apiBaseFileUrl": "http://127.0.0.1:8081/file/bot",
+      "transcribeVoice": true,
+      "transcribeAudio": false
     }
   }
 }
@@ -1309,7 +1311,9 @@ Example config:
   "channels": {
     "telegram": {
       "enabled": true,
-      "token": "YOUR_TELEGRAM_BOT_TOKEN"
+      "token": "YOUR_TELEGRAM_BOT_TOKEN",
+      "transcribeVoice": true,
+      "transcribeAudio": false
     }
   },
   "gateway": {
