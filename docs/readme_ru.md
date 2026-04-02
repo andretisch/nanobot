@@ -166,7 +166,7 @@ nanobot provider login qwen-oauth      # Qwen (qwen.ai, бесплатный tie
       "apiBaseFileUrl": "http://127.0.0.1:8081/file/bot",
       "transcribeVoice": true,
       "transcribeAudio": false,
-      "welcomeMessage": "Привет, {first_name}! Я крабобот.рф."
+      "welcomeMessage": "Привет, {first_name}! Я 🦀 крабобот.рф."
     }
   }
 }
