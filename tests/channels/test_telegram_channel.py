@@ -862,6 +862,50 @@ async def test_download_message_media_uses_file_unique_id_when_available(
 
 
 @pytest.mark.asyncio
+async def test_download_message_media_voice_lists_path_then_transcription(
+    monkeypatch, tmp_path
+) -> None:
+    """Voice/audio: saved path appears in content before optional transcription line."""
+    media_dir = tmp_path / "media" / "telegram"
+    media_dir.mkdir(parents=True)
+    monkeypatch.setattr(
+        "nanobot.channels.telegram.get_media_dir",
+        lambda channel=None: media_dir if channel else tmp_path / "media",
+    )
+
+    channel = TelegramChannel(
+        TelegramConfig(enabled=True, token="123:abc", allow_from=["*"]),
+        MessageBus(),
+    )
+    channel._app = _FakeApp(lambda: None)
+    channel._app.bot.get_file = AsyncMock(
+        return_value=SimpleNamespace(download_to_drive=AsyncMock(return_value=None))
+    )
+    channel.transcribe_audio = AsyncMock(return_value="hello world")
+
+    msg = SimpleNamespace(
+        photo=None,
+        voice=SimpleNamespace(
+            file_id="vid",
+            file_unique_id="vq1",
+            mime_type="audio/ogg",
+            file_size=100,
+        ),
+        audio=None,
+        document=None,
+        video=None,
+        video_note=None,
+        animation=None,
+    )
+    paths, parts = await channel._download_message_media(msg)
+    assert len(paths) == 1
+    assert paths[0].endswith("vq1.ogg")
+    assert len(parts) == 2
+    assert parts[0] == f"[voice: {paths[0]}]"
+    assert parts[1] == "[transcription: hello world]"
+
+
+@pytest.mark.asyncio
 async def test_on_message_attaches_reply_to_media_when_available(monkeypatch, tmp_path) -> None:
     """When user replies to a message with media, that media is downloaded and attached to the turn."""
     media_dir = tmp_path / "media" / "telegram"
