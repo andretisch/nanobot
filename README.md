@@ -270,7 +270,7 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
       "enabled": true,
       "token": "YOUR_BOT_TOKEN",
       "allowFrom": ["YOUR_USER_ID"],
-      "welcomeMessage": "Привет, {first_name}! Я крабобо.рф.",
+      "welcomeMessage": "Привет, {first_name}! Я крабобот.рф.",
       "apiBaseUrl": "http://127.0.0.1:8081/bot",
       "apiBaseFileUrl": "http://127.0.0.1:8081/file/bot",
       "transcribeVoice": true,

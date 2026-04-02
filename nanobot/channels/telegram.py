@@ -202,13 +202,13 @@ class TelegramChannel(BaseChannel):
 
     # Commands registered with Telegram's command menu
     BOT_COMMANDS = [
-        BotCommand("start", "Start the bot"),
-        BotCommand("new", "Start a new conversation"),
-        BotCommand("clear_memory", "Clear memory (archived to history)"),
-        BotCommand("stop", "Stop the current task"),
-        BotCommand("help", "Show available commands"),
-        BotCommand("restart", "Restart the bot"),
-        BotCommand("status", "Show bot status"),
+        BotCommand("start", "Запуск и приветствие"),
+        BotCommand("new", "Новый разговор"),
+        BotCommand("clear_memory", "Очистить память (архив в HISTORY.md)"),
+        BotCommand("stop", "Остановить текущую задачу"),
+        BotCommand("help", "Список команд"),
+        BotCommand("restart", "Перезапуск бота"),
+        BotCommand("status", "Статус бота"),
     ]
 
     @classmethod
@@ -616,7 +616,7 @@ class TelegramChannel(BaseChannel):
             # Keep the original structure, but translate and replace product name.
             first_name = getattr(user, "first_name", "") or ""
             text = (
-                f"👋 Привет {first_name}! Я крабобо.рф.\n\n"
+                f"👋 Привет {first_name}! Я крабобот.рф.\n\n"
                 "Отправь мне сообщение — я отвечу.\n"
                 "Напиши /help, чтобы посмотреть доступные команды."
             )
@@ -628,13 +628,13 @@ class TelegramChannel(BaseChannel):
         if not update.message:
             return
         await update.message.reply_text(
-            "🐈 nanobot commands:\n"
-            "/new — Start a new conversation\n"
-            "/clear_memory — Clear long-term memory (archived to HISTORY.md)\n"
-            "/stop — Stop the current task\n"
-            "/restart — Restart the bot\n"
-            "/status — Show bot status\n"
-            "/help — Show available commands"
+            "🦀 Команды крабобот.рф:\n\n"
+            "/new — новый разговор\n"
+            "/clear_memory — очистить память (архив в HISTORY.md)\n"
+            "/stop — остановить текущую задачу\n"
+            "/restart — перезапуск бота\n"
+            "/status — статус бота\n"
+            "/help — эта справка"
         )
 
     @staticmethod

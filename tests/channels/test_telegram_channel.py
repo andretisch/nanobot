@@ -180,7 +180,7 @@ async def test_on_start_uses_default_russian_welcome_when_template_empty() -> No
 
     assert msg.reply_text.await_count == 1
     text = msg.reply_text.await_args.args[0]
-    assert "крабобо.рф" in text
+    assert "крабобот.рф" in text
     assert "Привет" in text
 
 
