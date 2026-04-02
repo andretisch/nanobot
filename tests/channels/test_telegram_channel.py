@@ -484,6 +484,12 @@ def test_telegram_group_policy_defaults_to_mention() -> None:
     assert TelegramConfig().group_policy == "mention"
 
 
+def test_telegram_transcribe_defaults_voice_only() -> None:
+    cfg = TelegramConfig()
+    assert cfg.transcribe_voice is True
+    assert cfg.transcribe_audio is False
+
+
 def test_is_allowed_accepts_legacy_telegram_id_username_formats() -> None:
     channel = TelegramChannel(TelegramConfig(allow_from=["12345", "alice", "67890|bob"]), MessageBus())
 
@@ -938,6 +944,136 @@ async def test_download_message_media_voice_no_stt_keeps_voice_tag(monkeypatch, 
     )
     paths, parts = await channel._download_message_media(msg)
     assert len(paths) == 1
+    assert parts == [f"[voice: {paths[0]}]"]
+
+
+@pytest.mark.asyncio
+async def test_download_message_media_audio_skips_stt_by_default(monkeypatch, tmp_path) -> None:
+    """Uploaded audio (dictaphone) is not transcribed unless transcribe_audio is enabled."""
+    media_dir = tmp_path / "media" / "telegram"
+    media_dir.mkdir(parents=True)
+    monkeypatch.setattr(
+        "nanobot.channels.telegram.get_media_dir",
+        lambda channel=None: media_dir if channel else tmp_path / "media",
+    )
+
+    channel = TelegramChannel(
+        TelegramConfig(enabled=True, token="123:abc", allow_from=["*"]),
+        MessageBus(),
+    )
+    channel._app = _FakeApp(lambda: None)
+    channel._app.bot.get_file = AsyncMock(
+        return_value=SimpleNamespace(download_to_drive=AsyncMock(return_value=None))
+    )
+    mock_stt = AsyncMock(return_value="should not use")
+    channel.transcribe_audio = mock_stt
+
+    msg = SimpleNamespace(
+        photo=None,
+        voice=None,
+        audio=SimpleNamespace(
+            file_id="au1",
+            file_unique_id="aud1",
+            mime_type="audio/mpeg",
+            file_size=5000,
+            file_name="memo.mp3",
+        ),
+        document=None,
+        video=None,
+        video_note=None,
+        animation=None,
+    )
+    paths, parts = await channel._download_message_media(msg)
+    mock_stt.assert_not_called()
+    assert len(paths) == 1
+    assert parts == [f"[audio: {paths[0]}]"]
+
+
+@pytest.mark.asyncio
+async def test_download_message_media_audio_respects_transcribe_audio(monkeypatch, tmp_path) -> None:
+    media_dir = tmp_path / "media" / "telegram"
+    media_dir.mkdir(parents=True)
+    monkeypatch.setattr(
+        "nanobot.channels.telegram.get_media_dir",
+        lambda channel=None: media_dir if channel else tmp_path / "media",
+    )
+
+    channel = TelegramChannel(
+        TelegramConfig(
+            enabled=True,
+            token="123:abc",
+            allow_from=["*"],
+            transcribe_audio=True,
+        ),
+        MessageBus(),
+    )
+    channel._app = _FakeApp(lambda: None)
+    channel._app.bot.get_file = AsyncMock(
+        return_value=SimpleNamespace(download_to_drive=AsyncMock(return_value=None))
+    )
+    channel.transcribe_audio = AsyncMock(return_value="long memo text")
+
+    msg = SimpleNamespace(
+        photo=None,
+        voice=None,
+        audio=SimpleNamespace(
+            file_id="au1",
+            file_unique_id="aud2",
+            mime_type="audio/mpeg",
+            file_size=5000,
+            file_name="memo.mp3",
+        ),
+        document=None,
+        video=None,
+        video_note=None,
+        animation=None,
+    )
+    paths, parts = await channel._download_message_media(msg)
+    assert parts == ["[transcription: long memo text]"]
+    assert len(paths) == 1
+
+
+@pytest.mark.asyncio
+async def test_download_message_media_voice_respects_transcribe_voice_off(monkeypatch, tmp_path) -> None:
+    media_dir = tmp_path / "media" / "telegram"
+    media_dir.mkdir(parents=True)
+    monkeypatch.setattr(
+        "nanobot.channels.telegram.get_media_dir",
+        lambda channel=None: media_dir if channel else tmp_path / "media",
+    )
+
+    channel = TelegramChannel(
+        TelegramConfig(
+            enabled=True,
+            token="123:abc",
+            allow_from=["*"],
+            transcribe_voice=False,
+        ),
+        MessageBus(),
+    )
+    channel._app = _FakeApp(lambda: None)
+    channel._app.bot.get_file = AsyncMock(
+        return_value=SimpleNamespace(download_to_drive=AsyncMock(return_value=None))
+    )
+    mock_stt = AsyncMock(return_value="nope")
+    channel.transcribe_audio = mock_stt
+
+    msg = SimpleNamespace(
+        photo=None,
+        voice=SimpleNamespace(
+            file_id="vid",
+            file_unique_id="vqoff",
+            mime_type="audio/ogg",
+            file_size=100,
+        ),
+        audio=None,
+        document=None,
+        video=None,
+        video_note=None,
+        animation=None,
+    )
+    paths, parts = await channel._download_message_media(msg)
+    mock_stt.assert_not_called()
     assert parts == [f"[voice: {paths[0]}]"]
 
 

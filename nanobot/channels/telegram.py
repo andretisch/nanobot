@@ -182,6 +182,9 @@ class TelegramConfig(Base):
     api_base_url: str | None = None
     api_base_file_url: str | None = None
     streaming: bool = True
+    # Telegram distinguishes short voice notes (voice) from uploaded audio files (audio), e.g. dictaphone.
+    transcribe_voice: bool = True
+    transcribe_audio: bool = False
 
 
 class TelegramChannel(BaseChannel):
@@ -716,12 +719,16 @@ class TelegramChannel(BaseChannel):
             await file.download_to_drive(str(file_path))
             path_str = str(file_path)
             if media_type in ("voice", "audio"):
-                transcription = await self.transcribe_audio(file_path)
-                if transcription:
-                    logger.info("Transcribed {}: {}...", media_type, transcription[:50])
-                    # File is already on disk; path is in media[] for tools. Do not also
-                    # emit [voice: path] in content — skills often key off that and ask for STT again.
-                    return [path_str], [f"[transcription: {transcription}]"]
+                want_stt = (media_type == "voice" and self.config.transcribe_voice) or (
+                    media_type == "audio" and self.config.transcribe_audio
+                )
+                if want_stt:
+                    transcription = await self.transcribe_audio(file_path)
+                    if transcription:
+                        logger.info("Transcribed {}: {}...", media_type, transcription[:50])
+                        # File is already on disk; path is in media[] for tools. Do not also
+                        # emit [voice: path] in content — skills often key off that and ask for STT again.
+                        return [path_str], [f"[transcription: {transcription}]"]
                 return [path_str], [f"[{media_type}: {path_str}]"]
             return [path_str], [f"[{media_type}: {path_str}]"]
         except Exception as e:
