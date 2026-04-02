@@ -270,6 +270,7 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
       "enabled": true,
       "token": "YOUR_BOT_TOKEN",
       "allowFrom": ["YOUR_USER_ID"],
+      "welcomeMessage": "Привет, {first_name}! Я крабобо.рф.",
       "apiBaseUrl": "http://127.0.0.1:8081/bot",
       "apiBaseFileUrl": "http://127.0.0.1:8081/file/bot",
       "transcribeVoice": true,
@@ -287,6 +288,8 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
 > **Proxy:** set `"proxy": "http://127.0.0.1:7890"` (or `socks5://…`) inside `channels.telegram` if Bot API must go through a proxy. If you omit it but set `tools.web.proxy`, nanobot reuses that URL for Telegram as well. You can also set env `TELEGRAM_PROXY`. SOCKS5 URLs are supported via `python-telegram-bot[socks]` (nanobot declares this dependency). Plain HTTP proxies may work via `HTTPS_PROXY` without config (httpx); SOCKS5 is not picked up from the environment alone—set it in config, `TELEGRAM_PROXY`, or `tools.web.proxy`.
 >
 > **Voice vs audio (dictaphone):** by default only **voice notes** are auto-transcribed (`transcribeVoice`: true) when env **`AUDIO_URL`** is set. Uploaded **audio** files (`audio` in Bot API, e.g. dictaphone exports) are not transcribed (`transcribeAudio`: false) so long recordings do not flood context. Set `"transcribeAudio": true` if you want those transcribed too.
+>
+> **`welcomeMessage`** (optional): template for `/start` greeting. Supports `{first_name}` and `{username}`. If empty or missing — uses built-in default greeting.
 
 
 **3. Run**

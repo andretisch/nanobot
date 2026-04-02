@@ -185,6 +185,9 @@ class TelegramConfig(Base):
     # Telegram distinguishes short voice notes (voice) from uploaded audio files (audio), e.g. dictaphone.
     transcribe_voice: bool = True
     transcribe_audio: bool = False
+    # /start greeting template. If empty, the built-in default greeting is used.
+    # Supported placeholders: {first_name}, {username}.
+    welcome_message: str = ""
 
 
 class TelegramChannel(BaseChannel):
@@ -600,11 +603,25 @@ class TelegramChannel(BaseChannel):
             return
 
         user = update.effective_user
-        await update.message.reply_text(
-            f"👋 Hi {user.first_name}! I'm nanobot.\n\n"
-            "Send me a message and I'll respond!\n"
-            "Type /help to see available commands."
-        )
+        template = (getattr(self.config, "welcome_message", "") or "").strip()
+        if template:
+            try:
+                text = template.format(
+                    first_name=getattr(user, "first_name", "") or "",
+                    username=getattr(user, "username", "") or "",
+                )
+            except Exception:
+                text = template
+        else:
+            # Keep the original structure, but translate and replace product name.
+            first_name = getattr(user, "first_name", "") or ""
+            text = (
+                f"👋 Привет {first_name}! Я крабобо.рф.\n\n"
+                "Отправь мне сообщение — я отвечу.\n"
+                "Напиши /help, чтобы посмотреть доступные команды."
+            )
+
+        await update.message.reply_text(text)
 
     async def _on_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /help command, bypassing ACL so all users can access it."""

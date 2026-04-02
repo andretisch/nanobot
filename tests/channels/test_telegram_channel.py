@@ -165,6 +165,49 @@ def _make_telegram_update(
 
 
 @pytest.mark.asyncio
+async def test_on_start_uses_default_russian_welcome_when_template_empty() -> None:
+    """If welcomeMessage is empty, we send the built-in default greeting."""
+    channel = TelegramChannel(
+        TelegramConfig(enabled=True, token="123:abc", allow_from=["*"]),
+        MessageBus(),
+    )
+
+    user = SimpleNamespace(id=12345, username="alice", first_name="Alice")
+    msg = SimpleNamespace(reply_text=AsyncMock())
+    update = SimpleNamespace(message=msg, effective_user=user)
+
+    await channel._on_start(update, None)
+
+    assert msg.reply_text.await_count == 1
+    text = msg.reply_text.await_args.args[0]
+    assert "крабобо.рф" in text
+    assert "Привет" in text
+
+
+@pytest.mark.asyncio
+async def test_on_start_uses_configured_welcome_template() -> None:
+    """When welcomeMessage is set, /start uses it (formatted with {first_name})."""
+    channel = TelegramChannel(
+        TelegramConfig(
+            enabled=True,
+            token="123:abc",
+            allow_from=["*"],
+            welcome_message="Тест {first_name}!",
+        ),
+        MessageBus(),
+    )
+
+    user = SimpleNamespace(id=12345, username="alice", first_name="Alice")
+    msg = SimpleNamespace(reply_text=AsyncMock())
+    update = SimpleNamespace(message=msg, effective_user=user)
+
+    await channel._on_start(update, None)
+
+    assert msg.reply_text.await_count == 1
+    assert msg.reply_text.await_args.args[0] == "Тест Alice!"
+
+
+@pytest.mark.asyncio
 async def test_start_creates_separate_pools_with_proxy(monkeypatch) -> None:
     _FakeHTTPXRequest.clear()
     config = TelegramConfig(
