@@ -616,7 +616,7 @@ class TelegramChannel(BaseChannel):
             # Keep the original structure, but translate and replace product name.
             first_name = getattr(user, "first_name", "") or ""
             text = (
-                f"👋 Привет {first_name}! Я крабобот.рф.\n\n"
+                f"🦀 Привет {first_name}! Я крабобот.рф.\n\n"
                 "Отправь мне сообщение — я отвечу.\n"
                 "Напиши /help, чтобы посмотреть доступные команды."
             )

@@ -182,6 +182,7 @@ async def test_on_start_uses_default_russian_welcome_when_template_empty() -> No
     text = msg.reply_text.await_args.args[0]
     assert "крабобот.рф" in text
     assert "Привет" in text
+    assert text.startswith("🦀")
 
 
 @pytest.mark.asyncio
