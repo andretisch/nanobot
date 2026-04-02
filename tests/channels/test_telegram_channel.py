@@ -862,10 +862,10 @@ async def test_download_message_media_uses_file_unique_id_when_available(
 
 
 @pytest.mark.asyncio
-async def test_download_message_media_voice_lists_path_then_transcription(
+async def test_download_message_media_voice_transcription_omits_voice_tag_in_content(
     monkeypatch, tmp_path
 ) -> None:
-    """Voice/audio: saved path appears in content before optional transcription line."""
+    """When STT succeeds, content is only [transcription: ...]; path stays in paths for media."""
     media_dir = tmp_path / "media" / "telegram"
     media_dir.mkdir(parents=True)
     monkeypatch.setattr(
@@ -900,9 +900,45 @@ async def test_download_message_media_voice_lists_path_then_transcription(
     paths, parts = await channel._download_message_media(msg)
     assert len(paths) == 1
     assert paths[0].endswith("vq1.ogg")
-    assert len(parts) == 2
-    assert parts[0] == f"[voice: {paths[0]}]"
-    assert parts[1] == "[transcription: hello world]"
+    assert parts == ["[transcription: hello world]"]
+
+
+@pytest.mark.asyncio
+async def test_download_message_media_voice_no_stt_keeps_voice_tag(monkeypatch, tmp_path) -> None:
+    media_dir = tmp_path / "media" / "telegram"
+    media_dir.mkdir(parents=True)
+    monkeypatch.setattr(
+        "nanobot.channels.telegram.get_media_dir",
+        lambda channel=None: media_dir if channel else tmp_path / "media",
+    )
+
+    channel = TelegramChannel(
+        TelegramConfig(enabled=True, token="123:abc", allow_from=["*"]),
+        MessageBus(),
+    )
+    channel._app = _FakeApp(lambda: None)
+    channel._app.bot.get_file = AsyncMock(
+        return_value=SimpleNamespace(download_to_drive=AsyncMock(return_value=None))
+    )
+    channel.transcribe_audio = AsyncMock(return_value="")
+
+    msg = SimpleNamespace(
+        photo=None,
+        voice=SimpleNamespace(
+            file_id="vid",
+            file_unique_id="vq2",
+            mime_type="audio/ogg",
+            file_size=100,
+        ),
+        audio=None,
+        document=None,
+        video=None,
+        video_note=None,
+        animation=None,
+    )
+    paths, parts = await channel._download_message_media(msg)
+    assert len(paths) == 1
+    assert parts == [f"[voice: {paths[0]}]"]
 
 
 @pytest.mark.asyncio

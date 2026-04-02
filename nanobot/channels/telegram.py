@@ -716,14 +716,13 @@ class TelegramChannel(BaseChannel):
             await file.download_to_drive(str(file_path))
             path_str = str(file_path)
             if media_type in ("voice", "audio"):
-                # Always record the saved path first, then append STT so the turn text
-                # matches "file on disk" → transcription (same order as operations).
-                parts = [f"[{media_type}: {path_str}]"]
                 transcription = await self.transcribe_audio(file_path)
                 if transcription:
                     logger.info("Transcribed {}: {}...", media_type, transcription[:50])
-                    parts.append(f"[transcription: {transcription}]")
-                return [path_str], parts
+                    # File is already on disk; path is in media[] for tools. Do not also
+                    # emit [voice: path] in content — skills often key off that and ask for STT again.
+                    return [path_str], [f"[transcription: {transcription}]"]
+                return [path_str], [f"[{media_type}: {path_str}]"]
             return [path_str], [f"[{media_type}: {path_str}]"]
         except Exception as e:
             logger.warning("Failed to download message media: {}", e)
