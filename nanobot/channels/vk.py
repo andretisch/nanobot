@@ -52,7 +52,6 @@ class VKChannel(BaseChannel):
         super().__init__(config, bus)
         self.config: VKConfig = config
         self.bot: Bot | None = None
-        self._task: asyncio.Task | None = None
 
     async def _download_media(self, url: str, ext: str = ".bin") -> str | None:
         """Download media and store it under media/vk."""
@@ -274,17 +273,15 @@ class VKChannel(BaseChannel):
                 },
             )
 
-        self._task = asyncio.create_task(self.bot.run_polling())
-        while self._running and self._task and not self._task.done():
-            await asyncio.sleep(1)
+        # vkbottle requires awaiting run_polling() inside an active event loop.
+        await self.bot.run_polling()
 
     async def stop(self) -> None:
         self._running = False
-        if self._task and not self._task.done():
-            self._task.cancel()
+        if self.bot and getattr(self.bot, "polling", None):
             try:
-                await self._task
-            except asyncio.CancelledError:
+                self.bot.polling.stop()
+            except Exception:
                 pass
 
     async def send(self, msg: OutboundMessage) -> None:
