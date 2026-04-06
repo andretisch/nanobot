@@ -93,8 +93,14 @@ class WebSearchTool(Tool):
         self.proxy = proxy
 
     async def execute(self, query: str, count: int | None = None, **kwargs: Any) -> str:
-        provider = self.config.provider.strip().lower() or "brave"
+        provider = self.config.provider.strip().lower() or "duckduckgo"
         n = min(max(count or self.config.max_results, 1), 10)
+
+        if provider == "brave":
+            return (
+                "Error: web search provider 'brave' is no longer supported; "
+                "set tools.web.search.provider to 'duckduckgo' or another supported backend"
+            )
 
         if provider == "duckduckgo":
             return await self._search_duckduckgo(query, n)
@@ -104,32 +110,8 @@ class WebSearchTool(Tool):
             return await self._search_searxng(query, n)
         elif provider == "jina":
             return await self._search_jina(query, n)
-        elif provider == "brave":
-            return await self._search_brave(query, n)
         else:
             return f"Error: unknown search provider '{provider}'"
-
-    async def _search_brave(self, query: str, n: int) -> str:
-        api_key = self.config.api_key or os.environ.get("BRAVE_API_KEY", "")
-        if not api_key:
-            logger.warning("BRAVE_API_KEY not set, falling back to DuckDuckGo")
-            return await self._search_duckduckgo(query, n)
-        try:
-            async with httpx.AsyncClient(proxy=self.proxy) as client:
-                r = await client.get(
-                    "https://api.search.brave.com/res/v1/web/search",
-                    params={"q": query, "count": n},
-                    headers={"Accept": "application/json", "X-Subscription-Token": api_key},
-                    timeout=10.0,
-                )
-                r.raise_for_status()
-            items = [
-                {"title": x.get("title", ""), "url": x.get("url", ""), "content": x.get("description", "")}
-                for x in r.json().get("web", {}).get("results", [])
-            ]
-            return _format_results(query, items, n)
-        except Exception as e:
-            return f"Error: {e}"
 
     async def _search_tavily(self, query: str, n: int) -> str:
         api_key = self.config.api_key or os.environ.get("TAVILY_API_KEY", "")

@@ -1033,27 +1033,12 @@ nanobot supports multiple web search providers. Configure in `~/.nanobot/config.
 
 | Provider | Config fields | Env var fallback | Free |
 |----------|--------------|------------------|------|
-| `brave` (default) | `apiKey` | `BRAVE_API_KEY` | No |
+| `duckduckgo` (default) | — | — | Yes |
 | `tavily` | `apiKey` | `TAVILY_API_KEY` | No |
 | `jina` | `apiKey` | `JINA_API_KEY` | Free tier (10M tokens) |
 | `searxng` | `baseUrl` | `SEARXNG_BASE_URL` | Yes (self-hosted) |
-| `duckduckgo` | — | — | Yes |
 
-When credentials are missing, nanobot automatically falls back to DuckDuckGo.
-
-**Brave** (default):
-```json
-{
-  "tools": {
-    "web": {
-      "search": {
-        "provider": "brave",
-        "apiKey": "BSA..."
-      }
-    }
-  }
-}
-```
+When credentials are missing for Tavily, Jina, or SearXNG (no base URL), nanobot automatically falls back to DuckDuckGo.
 
 **Tavily:**
 ```json
@@ -1097,7 +1082,7 @@ When credentials are missing, nanobot automatically falls back to DuckDuckGo.
 }
 ```
 
-**DuckDuckGo** (zero config):
+**DuckDuckGo** (default, zero config — omit `search` or set `provider` explicitly):
 ```json
 {
   "tools": {
@@ -1112,8 +1097,8 @@ When credentials are missing, nanobot automatically falls back to DuckDuckGo.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `provider` | string | `"brave"` | Search backend: `brave`, `tavily`, `jina`, `searxng`, `duckduckgo` |
-| `apiKey` | string | `""` | API key for Brave or Tavily |
+| `provider` | string | `"duckduckgo"` | Search backend: `duckduckgo`, `tavily`, `jina`, `searxng` |
+| `apiKey` | string | `""` | API key for Tavily or Jina |
 | `baseUrl` | string | `""` | Base URL for SearXNG |
 | `maxResults` | integer | `5` | Results per search (1–10) |
 

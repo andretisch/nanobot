@@ -7,7 +7,7 @@ from nanobot.agent.tools.web import WebSearchTool
 from nanobot.config.schema import WebSearchConfig
 
 
-def _tool(provider: str = "brave", api_key: str = "", base_url: str = "") -> WebSearchTool:
+def _tool(provider: str = "duckduckgo", api_key: str = "", base_url: str = "") -> WebSearchTool:
     return WebSearchTool(config=WebSearchConfig(provider=provider, api_key=api_key, base_url=base_url))
 
 
@@ -16,22 +16,6 @@ def _response(status: int = 200, json: dict | None = None) -> httpx.Response:
     r = httpx.Response(status, json=json)
     r._request = httpx.Request("GET", "https://mock")
     return r
-
-
-@pytest.mark.asyncio
-async def test_brave_search(monkeypatch):
-    async def mock_get(self, url, **kw):
-        assert "brave" in url
-        assert kw["headers"]["X-Subscription-Token"] == "brave-key"
-        return _response(json={
-            "web": {"results": [{"title": "NanoBot", "url": "https://example.com", "description": "AI assistant"}]}
-        })
-
-    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
-    tool = _tool(provider="brave", api_key="brave-key")
-    result = await tool.execute(query="nanobot", count=1)
-    assert "NanoBot" in result
-    assert "https://example.com" in result
 
 
 @pytest.mark.asyncio
@@ -86,20 +70,12 @@ async def test_duckduckgo_search(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_brave_fallback_to_duckduckgo_when_no_key(monkeypatch):
-    class MockDDGS:
-        def __init__(self, **kw):
-            pass
-
-        def text(self, query, max_results=5):
-            return [{"title": "Fallback", "href": "https://ddg.example", "body": "DuckDuckGo fallback"}]
-
-    monkeypatch.setattr("ddgs.DDGS", MockDDGS)
-    monkeypatch.delenv("BRAVE_API_KEY", raising=False)
-
-    tool = _tool(provider="brave", api_key="")
+async def test_brave_provider_rejected():
+    tool = _tool(provider="brave")
     result = await tool.execute(query="test")
-    assert "Fallback" in result
+    assert "Error" in result
+    assert "brave" in result
+    assert "duckduckgo" in result
 
 
 @pytest.mark.asyncio
@@ -127,13 +103,16 @@ async def test_unknown_provider():
 
 
 @pytest.mark.asyncio
-async def test_default_provider_is_brave(monkeypatch):
-    async def mock_get(self, url, **kw):
-        assert "brave" in url
-        return _response(json={"web": {"results": []}})
+async def test_default_empty_provider_is_duckduckgo(monkeypatch):
+    class MockDDGS:
+        def __init__(self, **kw):
+            pass
 
-    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
-    tool = _tool(provider="", api_key="test-key")
+        def text(self, query, max_results=5):
+            return []
+
+    monkeypatch.setattr("ddgs.DDGS", MockDDGS)
+    tool = _tool(provider="", api_key="")
     result = await tool.execute(query="test")
     assert "No results" in result
 
