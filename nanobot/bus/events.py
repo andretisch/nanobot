@@ -17,11 +17,18 @@ class InboundMessage:
     media: list[str] = field(default_factory=list)  # Media URLs
     metadata: dict[str, Any] = field(default_factory=dict)  # Channel-specific data
     session_key_override: str | None = None  # Optional override for thread-scoped sessions
+    user_id: str | None = None  # Internal cross-channel user identity
 
     @property
     def session_key(self) -> str:
         """Unique key for session identification."""
         return self.session_key_override or f"{self.channel}:{self.chat_id}"
+
+    @property
+    def dispatch_key(self) -> str:
+        """Runtime dispatch key (session scoped within a user when available)."""
+        base = self.session_key
+        return f"user:{self.user_id}:{base}" if self.user_id else base
 
 
 @dataclass

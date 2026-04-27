@@ -83,15 +83,6 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         is_direct=True,
     ),
 
-    # === Azure OpenAI (direct API calls with API version 2024-10-21) =====
-    ProviderSpec(
-        name="azure_openai",
-        keywords=("azure", "azure-openai"),
-        env_key="",
-        display_name="Azure OpenAI",
-        backend="azure_openai",
-        is_direct=True,
-    ),
     # === Gateways (detected by api_key / api_base, not model name) =========
     # Gateways can route any model, so they win in fallback.
     # OpenRouter: global gateway, keys start with "sk-or-"
@@ -184,15 +175,6 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
 
 
     # === Standard providers (matched by model-name keywords) ===============
-    # Anthropic: native Anthropic SDK
-    ProviderSpec(
-        name="anthropic",
-        keywords=("anthropic", "claude"),
-        env_key="ANTHROPIC_API_KEY",
-        display_name="Anthropic",
-        backend="anthropic",
-        supports_prompt_caching=True,
-    ),
     # OpenAI: SDK default base URL (no override needed)
     ProviderSpec(
         name="openai",
@@ -200,27 +182,6 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         env_key="OPENAI_API_KEY",
         display_name="OpenAI",
         backend="openai_compat",
-    ),
-    # OpenAI Codex: OAuth-based, dedicated provider
-    ProviderSpec(
-        name="openai_codex",
-        keywords=("openai-codex",),
-        env_key="",
-        display_name="OpenAI Codex",
-        backend="openai_codex",
-        detect_by_base_keyword="codex",
-        default_api_base="https://chatgpt.com/backend-api",
-        is_oauth=True,
-    ),
-    # Qwen OAuth: uses qwen.ai Device Code OAuth (free tier). Models: coder-model, vision-model.
-    ProviderSpec(
-        name="qwen_oauth",
-        keywords=("qwen-oauth", "qwen_oauth", "coder-model", "vision-model"),
-        env_key="",  # OAuth-based, no API key
-        display_name="Qwen OAuth",
-        backend="qwen_oauth",
-        default_api_base="https://portal.qwen.ai/v1",
-        is_oauth=True,
     ),
     # GitHub Copilot: OAuth-based
     ProviderSpec(
@@ -358,8 +319,10 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
 
 def find_by_name(name: str) -> ProviderSpec | None:
     """Find a provider spec by config field name, e.g. "dashscope"."""
-    normalized = to_snake(name.replace("-", "_"))
+    raw = (name or "").strip()
+    normalized = to_snake(raw.replace("-", "_"))
+    candidates = {raw, raw.replace("-", "_"), normalized}
     for spec in PROVIDERS:
-        if spec.name == normalized:
+        if spec.name in candidates:
             return spec
     return None

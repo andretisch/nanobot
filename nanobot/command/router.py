@@ -22,6 +22,7 @@ class CommandContext:
     raw: str
     args: str = ""
     loop: Any = None
+    runtime: Any = None
 
 
 class CommandRouter:

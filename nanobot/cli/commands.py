@@ -390,13 +390,7 @@ def _make_provider(config: Config):
     backend = spec.backend if spec else "openai_compat"
 
     # --- validation ---
-    if backend == "azure_openai":
-        if not p or not p.api_key or not p.api_base:
-            console.print("[red]Error: Azure OpenAI requires api_key and api_base.[/red]")
-            console.print("Set them in ~/.nanobot/config.json under providers.azure_openai section")
-            console.print("Use the model field to specify the deployment name.")
-            raise typer.Exit(1)
-    elif backend == "openai_compat" and not model.startswith("bedrock/"):
+    if backend == "openai_compat" and not model.startswith("bedrock/"):
         needs_key = not (p and p.api_key)
         exempt = spec and (spec.is_oauth or spec.is_local or spec.is_direct)
         if needs_key and not exempt:
@@ -404,37 +398,14 @@ def _make_provider(config: Config):
             console.print("Set one in ~/.nanobot/config.json under providers section")
             raise typer.Exit(1)
 
-    # --- instantiation by backend ---
-    if backend == "openai_codex":
-        from nanobot.providers.openai_codex_provider import OpenAICodexProvider
-        provider = OpenAICodexProvider(default_model=model)
-    elif backend == "qwen_oauth":
-        from nanobot.providers.qwen_oauth_provider import QwenOAuthProvider
-        provider = QwenOAuthProvider(default_model=model)
-    elif backend == "azure_openai":
-        from nanobot.providers.azure_openai_provider import AzureOpenAIProvider
-        provider = AzureOpenAIProvider(
-            api_key=p.api_key,
-            api_base=p.api_base,
-            default_model=model,
-        )
-    elif backend == "anthropic":
-        from nanobot.providers.anthropic_provider import AnthropicProvider
-        provider = AnthropicProvider(
-            api_key=p.api_key if p else None,
-            api_base=config.get_api_base(model),
-            default_model=model,
-            extra_headers=p.extra_headers if p else None,
-        )
-    else:
-        from nanobot.providers.openai_compat_provider import OpenAICompatProvider
-        provider = OpenAICompatProvider(
-            api_key=p.api_key if p else None,
-            api_base=config.get_api_base(model),
-            default_model=model,
-            extra_headers=p.extra_headers if p else None,
-            spec=spec,
-        )
+    from nanobot.providers.openai_compat_provider import OpenAICompatProvider
+    provider = OpenAICompatProvider(
+        api_key=p.api_key if p else None,
+        api_base=config.get_api_base(model),
+        default_model=model,
+        extra_headers=p.extra_headers if p else None,
+        spec=spec,
+    )
 
     defaults = config.agents.defaults
     provider.generation = GenerationSettings(
@@ -549,6 +520,7 @@ def serve(
         session_manager=session_manager,
         mcp_servers=runtime_config.tools.mcp_servers,
         channels_config=runtime_config.channels,
+        multi_user_config=runtime_config.tools.multi_user,
         timezone=runtime_config.agents.defaults.timezone,
     )
 
@@ -637,6 +609,7 @@ def gateway(
         session_manager=session_manager,
         mcp_servers=config.tools.mcp_servers,
         channels_config=config.channels,
+        multi_user_config=config.tools.multi_user,
         short_memory=config.agents.defaults.short_memory,
         timezone=config.agents.defaults.timezone,
     )
@@ -843,6 +816,7 @@ def agent(
         restrict_to_workspace=config.tools.restrict_to_workspace,
         mcp_servers=config.tools.mcp_servers,
         channels_config=config.channels,
+        multi_user_config=config.tools.multi_user,
         short_memory=config.agents.defaults.short_memory,
         timezone=config.agents.defaults.timezone,
     )
@@ -1205,16 +1179,6 @@ def provider_login(
 
     console.print(f"{__logo__} OAuth Login - {spec.label}\n")
     handler()
-
-
-@_register_login("qwen_oauth")
-def _login_qwen_oauth() -> None:
-    from nanobot.providers.qwen_oauth_provider import login_qwen_oauth
-    try:
-        login_qwen_oauth()
-    except Exception as e:
-        console.print(f"[red]✗ Authentication failed: {e}[/red]")
-        raise typer.Exit(1)
 
 
 @_register_login("openai_codex")

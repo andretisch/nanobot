@@ -16,14 +16,15 @@ async def cmd_stop(ctx: CommandContext) -> OutboundMessage:
     """Cancel all active tasks and subagents for the session."""
     loop = ctx.loop
     msg = ctx.msg
-    tasks = loop._active_tasks.pop(msg.session_key, [])
+    runtime = ctx.runtime or loop._default_runtime
+    tasks = loop._active_tasks.pop(msg.dispatch_key, [])
     cancelled = sum(1 for t in tasks if not t.done() and t.cancel())
     for t in tasks:
         try:
             await t
         except (asyncio.CancelledError, Exception):
             pass
-    sub_cancelled = await loop.subagents.cancel_by_session(msg.session_key)
+    sub_cancelled = await runtime.subagents.cancel_by_session(msg.dispatch_key)
     total = cancelled + sub_cancelled
     content = f"Stopped {total} task(s)." if total else "No active task to stop."
     return OutboundMessage(channel=msg.channel, chat_id=msg.chat_id, content=content)
@@ -44,10 +45,11 @@ async def cmd_restart(ctx: CommandContext) -> OutboundMessage:
 async def cmd_status(ctx: CommandContext) -> OutboundMessage:
     """Build an outbound status message for a session."""
     loop = ctx.loop
-    session = ctx.session or loop.sessions.get_or_create(ctx.key)
+    runtime = ctx.runtime or loop._default_runtime
+    session = ctx.session or runtime.sessions.get_or_create(ctx.key)
     ctx_est = 0
     try:
-        ctx_est, _ = loop.memory_consolidator.estimate_session_prompt_tokens(session)
+        ctx_est, _ = runtime.memory_consolidator.estimate_session_prompt_tokens(session)
     except Exception:
         pass
     if ctx_est <= 0:
@@ -69,13 +71,14 @@ async def cmd_status(ctx: CommandContext) -> OutboundMessage:
 async def cmd_new(ctx: CommandContext) -> OutboundMessage:
     """Start a fresh session."""
     loop = ctx.loop
-    session = ctx.session or loop.sessions.get_or_create(ctx.key)
+    runtime = ctx.runtime or loop._default_runtime
+    session = ctx.session or runtime.sessions.get_or_create(ctx.key)
     snapshot = session.messages[session.last_consolidated:]
     session.clear()
-    loop.sessions.save(session)
-    loop.sessions.invalidate(session.key)
+    runtime.sessions.save(session)
+    runtime.sessions.invalidate(session.key)
     if snapshot:
-        loop._schedule_background(loop.memory_consolidator.archive_messages(snapshot))
+        loop._schedule_background(runtime.memory_consolidator.archive_messages(snapshot))
     return OutboundMessage(
         channel=ctx.msg.channel, chat_id=ctx.msg.chat_id,
         content="New session started.",
@@ -100,9 +103,57 @@ def build_help_text() -> str:
         "/stop — Stop the current task",
         "/restart — Restart the bot",
         "/status — Show bot status",
+        "/link — Link account across channels",
         "/help — Show available commands",
     ]
     return "\n".join(lines)
+
+
+async def cmd_link(ctx: CommandContext) -> OutboundMessage:
+    """Generate or consume one-time link codes for cross-channel account mapping."""
+    loop = ctx.loop
+    msg = ctx.msg
+    code = (ctx.args or "").strip().upper()
+    if not loop.multi_user_enabled:
+        return OutboundMessage(
+            channel=msg.channel,
+            chat_id=msg.chat_id,
+            content="Multi-user mode is disabled in config.",
+        )
+    if not msg.user_id:
+        return OutboundMessage(
+            channel=msg.channel,
+            chat_id=msg.chat_id,
+            content="Unable to resolve your account identity.",
+        )
+    if not code:
+        generated = await loop.user_resolver.create_link_code(msg.user_id)
+        return OutboundMessage(
+            channel=msg.channel,
+            chat_id=msg.chat_id,
+            content=(
+                "Link code created.\n"
+                f"Use `/link {generated}` in your other channel account within the TTL window."
+            ),
+            metadata={"render_as": "text"},
+        )
+
+    result = await loop.user_resolver.consume_link_code(code, msg.channel, msg.sender_id)
+    if not result.ok:
+        await loop.user_resolver.register_failed_link_attempt(code)
+        return OutboundMessage(
+            channel=msg.channel,
+            chat_id=msg.chat_id,
+            content=f"Link failed: {result.error or 'invalid_code'}",
+            metadata={"render_as": "text"},
+        )
+    msg.user_id = result.user_id
+    return OutboundMessage(
+        channel=msg.channel,
+        chat_id=msg.chat_id,
+        content="Account linked successfully. Your future messages will share the same user data.",
+        metadata={"render_as": "text"},
+    )
 
 
 def register_builtin_commands(router: CommandRouter) -> None:
@@ -112,4 +163,5 @@ def register_builtin_commands(router: CommandRouter) -> None:
     router.priority("/status", cmd_status)
     router.exact("/new", cmd_new)
     router.exact("/status", cmd_status)
+    router.prefix("/link", cmd_link)
     router.exact("/help", cmd_help)

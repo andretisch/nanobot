@@ -63,8 +63,8 @@ class ProvidersConfig(Base):
     """Configuration for LLM providers."""
 
     custom: ProviderConfig = Field(default_factory=ProviderConfig)  # Any OpenAI-compatible endpoint
-    azure_openai: ProviderConfig = Field(default_factory=ProviderConfig)  # Azure OpenAI (model = deployment name)
-    anthropic: ProviderConfig = Field(default_factory=ProviderConfig)
+    azure_openai: ProviderConfig = Field(default_factory=ProviderConfig)  # deprecated backend removed
+    anthropic: ProviderConfig = Field(default_factory=ProviderConfig)  # deprecated backend removed
     openai: ProviderConfig = Field(default_factory=ProviderConfig)
     openrouter: ProviderConfig = Field(default_factory=ProviderConfig)
     deepseek: ProviderConfig = Field(default_factory=ProviderConfig)
@@ -85,8 +85,7 @@ class ProvidersConfig(Base):
     volcengine_coding_plan: ProviderConfig = Field(default_factory=ProviderConfig)  # VolcEngine Coding Plan
     byteplus: ProviderConfig = Field(default_factory=ProviderConfig)  # BytePlus (VolcEngine international)
     byteplus_coding_plan: ProviderConfig = Field(default_factory=ProviderConfig)  # BytePlus Coding Plan
-    openai_codex: ProviderConfig = Field(default_factory=ProviderConfig, exclude=True)  # OpenAI Codex (OAuth)
-    qwen_oauth: ProviderConfig = Field(default_factory=ProviderConfig)  # Qwen OAuth (qwen.ai free tier)
+    openai_codex: ProviderConfig = Field(default_factory=ProviderConfig, exclude=True)  # deprecated backend removed
     github_copilot: ProviderConfig = Field(default_factory=ProviderConfig, exclude=True)  # Github Copilot (OAuth)
 
 
@@ -163,8 +162,17 @@ class MCPServerConfig(Base):
 class ToolsConfig(Base):
     """Tools configuration."""
 
+    class MultiUserConfig(Base):
+        """Multi-user runtime isolation settings."""
+
+        enabled: bool = False
+        users_dirname: str = "users"
+        link_code_ttl_seconds: int = 600
+        link_code_attempt_limit: int = 5
+
     web: WebToolsConfig = Field(default_factory=WebToolsConfig)
     exec: ExecToolConfig = Field(default_factory=ExecToolConfig)
+    multi_user: MultiUserConfig = Field(default_factory=MultiUserConfig)
     restrict_to_workspace: bool = False  # If true, restrict all tool access to workspace directory
     mcp_servers: dict[str, MCPServerConfig] = Field(default_factory=dict)
 
@@ -207,18 +215,18 @@ class Config(BaseSettings):
             kw = kw.lower()
             return kw in model_lower or kw.replace("-", "_") in model_normalized
 
-        # Explicit provider prefix wins — prevents `github-copilot/...codex` matching openai_codex.
+        # Explicit provider prefix wins.
         for spec in PROVIDERS:
             p = getattr(self.providers, spec.name, None)
             if p and model_prefix and normalized_prefix == spec.name:
-                if spec.is_oauth or spec.is_local or p.api_key:
+                if spec.is_oauth or spec.is_local or spec.is_direct or p.api_key:
                     return p, spec.name
 
         # Match by keyword (order follows PROVIDERS registry)
         for spec in PROVIDERS:
             p = getattr(self.providers, spec.name, None)
             if p and any(_kw_matches(kw) for kw in spec.keywords):
-                if spec.is_oauth or spec.is_local or p.api_key:
+                if spec.is_oauth or spec.is_local or spec.is_direct or p.api_key:
                     return p, spec.name
 
         # Fallback: configured local providers can route models without

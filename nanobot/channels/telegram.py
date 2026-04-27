@@ -206,6 +206,7 @@ class TelegramChannel(BaseChannel):
         BotCommand("new", "Новый разговор"),
         BotCommand("clear_memory", "Очистить память (архив в HISTORY.md)"),
         BotCommand("stop", "Остановить текущую задачу"),
+        BotCommand("link", "Связать аккаунт между каналами"),
         BotCommand("help", "Список команд"),
         BotCommand("restart", "Перезапуск бота"),
         BotCommand("status", "Статус бота"),

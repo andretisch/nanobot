@@ -1359,6 +1359,29 @@ nanobot gateway --config ~/.nanobot-telegram/config.json --workspace /tmp/nanobo
 
 Interactive mode exits: `exit`, `quit`, `/exit`, `/quit`, `:q`, or `Ctrl+D`.
 
+### Multi-user account linking
+
+Enable per-user storage isolation across channels:
+
+```json
+{
+  "tools": {
+    "restrictToWorkspace": true,
+    "multiUser": {
+      "enabled": true,
+      "usersDirname": "users",
+      "linkCodeTtlSeconds": 600,
+      "linkCodeAttemptLimit": 5
+    }
+  }
+}
+```
+
+When enabled:
+- each resolved user gets data under `<workspace>/users/<user_id>/...`;
+- `/link` creates a one-time code in one channel;
+- `/link CODE` in another channel attaches that account to the same internal user.
+
 <details>
 <summary><b>Heartbeat (Periodic Tasks)</b></summary>
 

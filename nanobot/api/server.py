@@ -109,6 +109,7 @@ async def handle_chat_completions(request: web.Request) -> web.Response:
                         session_key=session_key,
                         channel="api",
                         chat_id=API_CHAT_ID,
+                        sender_id=str(body.get("session_id") or "default"),
                     ),
                     timeout=timeout_s,
                 )
@@ -125,6 +126,7 @@ async def handle_chat_completions(request: web.Request) -> web.Response:
                             session_key=session_key,
                             channel="api",
                             chat_id=API_CHAT_ID,
+                            sender_id=str(body.get("session_id") or "default"),
                         ),
                         timeout=timeout_s,
                     )

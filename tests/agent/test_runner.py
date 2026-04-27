@@ -269,7 +269,7 @@ async def test_loop_max_iterations_message_stays_stable(tmp_path):
     loop.tools.execute = AsyncMock(return_value="ok")
     loop.max_iterations = 2
 
-    final_content, _, _ = await loop._run_agent_loop([])
+    final_content, _, _ = await loop._run_agent_loop(loop._default_runtime, [])
 
     assert final_content == (
         "I reached the maximum number of tool call iterations (2) "
@@ -297,6 +297,7 @@ async def test_loop_stream_filter_handles_think_only_prefix_without_crashing(tmp
         endings.append(resuming)
 
     final_content, _, _ = await loop._run_agent_loop(
+        loop._default_runtime,
         [],
         on_stream=on_stream,
         on_stream_end=on_stream_end,
